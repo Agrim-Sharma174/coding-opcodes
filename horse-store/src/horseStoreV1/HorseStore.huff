@@ -1,0 +1,54 @@
+// SEND CALLDATA -> FUNCTION DISPATCH -> FUNCTION
+
+//60008060093d393df3 - when i run this- contract cretion bytecode
+// Let's find function selector -> route it to the code that updates horses
+#define macro MAIN() = takes(0) returns(0) {
+    // first, I am entering plain 0 into the stack
+    0x00
+    // now, I will do calldataload which pops out the 0 and enters the calldata (it is basically the function and input we are sending, suppose i am calling a function mint with the tokenId of an NFT then the input which goes to solidity is a calldata which is the function selector and the tokenId)- example- 0xcdfead2e0000000000000000000000000000000000000000000000000000000000000001
+    calldataload
+    // now, i want to take only the function selector, which is first 4 bytes (we see this except 0x) taking example from line 8's calldata, our function selector is cdfead2e.
+    // we want to take only the first 4 bytes of the calldata, so we will do SHR, which will shift the calldata to the right by 224 bits, so that the first 4 bytes are left. as the stack only takes 32 bytes at a time, we have only this part- 0xcdfead2e00000000000000000000000000000000000000000000000000000000 (62 bytes, i gues maybe i counted more or less, i mean, you understood right we take 64 bits, it will be 32 bytes, and the left bits at last will not be taken by stack), so now we have 32 bytes, we have to only take the function selector part because we have to call it to manually call the function. now we have 56 bytes left (leaving first 4 bytes, we have to shift it to the right by 224 bits, so that the first 4 bytes are left) as SHR works on- first inside the stack the number should be there(which is calldata in our case), then the number of bits to shift to the right on top of stack. so 224 bits will convet to hex using cast to-base 224 hex, got - 0xe0
+    0xe0
+    shr
+    // got this after compiling- 60058060093d393df35f3560e01c
+    // we have function selector in stack now, we will do dispatching
+    // Jump to the function that corresponds to the function selector (updateHorseNumber)
+    // if (function selector) f_selector == updateHorseNumber -> jump to updateHorseNumber
+    // if f_selector == readHorseNumber -> jump to readHorseNumber
+    // to get function selector of updateHorseNumber, we will do `cast sig "updateHorseNumber(uint256 newNumberOfHorses)"` - got this- 0xcdfead2e
+    // for readNumberOfHorses() 0xe026c017
+    // on evm.codes website, we have opcodes to do certain stuff... to compare i will see which one is it- we have EO (means equals), so we will push our function selectors 
+
+
+    // let's duplicate the function selector, so to get context later.
+    dup1               // [function_selector, function_selector]
+    //updateHorseNumber
+    0xcdfead2e          // [0xcdfead2e, function_selector, function_selector]
+    eq                  // [true_if_function_selector_matches, function_selector]
+    // jump to updateHorseNumber code if true
+    updateJump          // [updateHorseNumberProgramCounter, true/false, function_selector]
+    jumpi               // [function_selector]
+    //if we need to do these in evm playground, but there we have to remove the contract creation opcodes... from calldata, so normally we compile with -`huffc src/horseStoreV1/HorseStore.huff -b` but to automatically remove the contract creation bytecode, we have to do -`huffc src/horseStoreV1/HorseStore.huff --bin-runtime` - we got - 5f3560e01c63cdfead2e1461000f575b
+
+    // readNumberOfHorses, 0xe026c017     //[function_selector]
+    0xe026c017          // [0xe026c017, function_selector]
+    eq                  // [true_if_function_selector_matches]
+    readJump            // [readJump, true_if_function_selector_matches]
+    jumpi               // []
+
+    // if no func selector matches, it should revert
+    0x00 0x00 revert
+
+    updateJump:
+        SET_NUMBER_OF_HORSES() // updateHorseNumber code
+
+    readJump:
+        GET_NUMBER_OF_HORSES()
+
+    
+}
+
+#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+
+#define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
