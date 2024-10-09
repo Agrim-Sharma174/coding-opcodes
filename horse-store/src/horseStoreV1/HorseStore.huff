@@ -7,6 +7,9 @@
 #define function updateHorseNumber(uint256) nonpayable returns()
 #define function readNumberOfHorses() view returns(uint256)
 
+#define constant NUMBER_OF_HORSES_STORAGE_SLOT = FREE_STORAGE_POINTER() // 0
+#define constant NUMBER_OF_HORSES_STORAGE_SLOT2 = FREE_STORAGE_POINTER() // 1
+
 #define macro MAIN() = takes(0) returns(0) {
     // first, I am entering plain 0 into the stack
     0x00
@@ -62,6 +65,29 @@
     
 }
 
-#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    // 1. Get the value to store from calldata
 
-#define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {}
+    0x04            // [4]
+    calldataload    // [value] - // [calldata-func_selector or we can say- value(which we are giving)]
+
+    // 2. Give it a storage slot
+    [NUMBER_OF_HORSES_STORAGE_SLOT]                 // [storage_slot, value]
+    // 3. sstore opcode 
+    // - sstore used to store data in storage
+    sstore
+    stop
+}
+
+#define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    // 1. Get the storage slot
+    // 2. Load the value of that slot into memory
+    // 3. Return
+    [NUMBER_OF_HORSES_STORAGE_SLOT] // [storage_slot]
+    sload                           // [value]
+    0x00                            // [0, value]
+    mstore                          // []               // Memory: [value]
+
+    // 0x20 == 32 bytes
+    0x20 0x00 return                // []
+}
