@@ -2,6 +2,11 @@
 
 //60008060093d393df3 - when i run this- contract cretion bytecode
 // Let's find function selector -> route it to the code that updates horses
+
+// interface
+#define function updateHorseNumber(uint256) nonpayable returns()
+#define function readNumberOfHorses() view returns(uint256)
+
 #define macro MAIN() = takes(0) returns(0) {
     // first, I am entering plain 0 into the stack
     0x00
@@ -24,7 +29,11 @@
     // let's duplicate the function selector, so to get context later.
     dup1               // [function_selector, function_selector]
     //updateHorseNumber
-    0xcdfead2e          // [0xcdfead2e, function_selector, function_selector]
+    //0xcdfead2e          // [0xcdfead2e, function_selector, function_selector]
+
+    // the above line of code representes the function selector of updateHorseNumber, but now we will use __FUNC_SIG, along with, (-WHICHEVER function we have to take func selector of-)
+    __FUNC_SIG(updateHorseNumber) // [0xcdfead2e, function_selector, function_selector]
+
     eq                  // [true_if_function_selector_matches, function_selector]
     // jump to updateHorseNumber code if true
     updateJump          // [updateHorseNumberProgramCounter, true/false, function_selector]
@@ -32,13 +41,17 @@
     //if we need to do these in evm playground, but there we have to remove the contract creation opcodes... from calldata, so normally we compile with -`huffc src/horseStoreV1/HorseStore.huff -b` but to automatically remove the contract creation bytecode, we have to do -`huffc src/horseStoreV1/HorseStore.huff --bin-runtime` - we got - 5f3560e01c63cdfead2e1461000f575b
 
     // readNumberOfHorses, 0xe026c017     //[function_selector]
-    0xe026c017          // [0xe026c017, function_selector]
+    // 0xe026c017          // [0xe026c017, function_selector]
+
+    // Here too using __FUNC_SIG, we will get the function selector of readNumberOfHorses
+    __FUNC_SIG(readNumberOfHorses) // [0xe026c017, function_selector]
+
     eq                  // [true_if_function_selector_matches]
     readJump            // [readJump, true_if_function_selector_matches]
     jumpi               // []
 
     // if no func selector matches, it should revert
-    0x00 0x00 revert
+    0x00 0x00 revert    // []
 
     updateJump:
         SET_NUMBER_OF_HORSES() // updateHorseNumber code
