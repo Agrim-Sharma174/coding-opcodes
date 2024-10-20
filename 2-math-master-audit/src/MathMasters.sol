@@ -38,6 +38,12 @@ library MathMasters {
         assembly {
             // Equivalent to `require(y == 0 || x <= type(uint256).max / y)`.
             if mul(y, gt(x, div(not(0), y))) {
+
+                //@audit-low: the 0x1c place in memory is blank, as we are putting the data at 0x40 which is wrong spot, as it is for free memory pointer.
+                // so, this will revert with a blank message.
+                // @audit- why to override free memory pointer?
+                // @audit- wrong function selector
+                // we will run cast sig "MathMasters__MulWadFailed()" to get the function selector of the error. and we found the 
                 mstore(0x40, 0xbac65e5b) // `MathMasters__MulWadFailed()`.
                 revert(0x1c, 0x04)
             }
@@ -54,7 +60,9 @@ library MathMasters {
                 mstore(0x40, 0xbac65e5b) // `MathMasters__MulWadFailed()`.
                 revert(0x1c, 0x04)
             }
-            if iszero(sub(div(add(z, x), y), 1)) { x := add(x, 1) }
+            if iszero(sub(div(add(z, x), y), 1)) {
+                x := add(x, 1)
+            }
             z := add(iszero(iszero(mod(mul(x, y), WAD))), div(mul(x, y), WAD))
         }
     }
